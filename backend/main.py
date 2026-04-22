@@ -111,9 +111,9 @@ try:
     with open(nb_path, "rb") as f:
         nb_model = pickle.load(f)
     print(f"✅ Naive Bayes model loaded successfully\n")
-except FileNotFoundError as e:
-    print(f"❌ Warning: ML models not found. Run model_trainer.py first.")
-    print(f"   Error: {str(e)}\n")
+except Exception as e:
+    print(f"❌ Warning: ML models failed to load. The app will continue, but ML predictions will be disabled.")
+    print(f"   Error details: {str(e)}\n")
     tfidf = None
     nb_model = None
 

@@ -14,7 +14,10 @@ print(f"  - GROQ_API_KEY configured: {bool(api_key)}")
 if api_key:
     print(f"  - API key preview: {api_key[:10]}...{api_key[-5:]}")
 
-client = Groq(api_key=api_key)
+# Do not initialize the client immediately if key is missing, to prevent app crash
+client = None
+if api_key:
+    client = Groq(api_key=api_key)
 print("✅ Groq client initialized\n")
 
 def analyze_message_with_llama(message: str) -> dict:
