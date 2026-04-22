@@ -85,9 +85,9 @@ app = FastAPI(title="Fraud Detection API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "https://fraud-detection-ai-beta.vercel.app"],
-    allow_credentials=False, # Set to False for public API if using "*"
-    allow_methods=["*"],
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
