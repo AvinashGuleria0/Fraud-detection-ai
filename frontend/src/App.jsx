@@ -136,10 +136,11 @@ function App() {
     setResult(null);
 
     try {
-      console.log('🌐 Sending POST request to http://127.0.0.1:8000/predict');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      console.log(`🌐 Sending POST request to ${apiUrl}/predict`);
       console.log('📦 Payload:', { message });
       
-      const response = await axios.post('http://127.0.0.1:8000/predict', { message });
+      const response = await axios.post(`${apiUrl}/predict`, { message });
       
       console.log('✅ Received response from backend:', response.status);
       console.log('📊 Response data:', response.data);
