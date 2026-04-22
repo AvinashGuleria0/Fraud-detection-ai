@@ -239,9 +239,41 @@ def predict_fraud(req: MessageRequest):
         print("="*80 + "\n")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
-@app.get("/")
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
 def home():
-    return {"message": "Fraud Detection API is running"}
+    return """
+    <html>
+        <head>
+            <title>FraudGuard AI | Active</title>
+            <style>
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+                    background: #0f172a; color: white; display: flex; align-items: center; 
+                    justify-content: center; height: 100vh; margin: 0; 
+                }
+                .card { 
+                    background: #1e293b; padding: 2.5rem; border-radius: 1.5rem; 
+                    text-align: center; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+                }
+                h1 { margin: 0; color: #8b5cf6; font-size: 2rem; }
+                p { color: #94a3b8; margin: 10px 0 20px; }
+                .status { 
+                    display: inline-block; padding: 5px 15px; background: #065f46; 
+                    color: #34d399; border-radius: 100px; font-weight: bold; font-size: 0.8rem;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="status">● SYSTEM LIVE</div>
+                <h1>FraudGuard AI Backend</h1>
+                <p>Hybrid ML + Llama Intelligence is ready.</p>
+            </div>
+        </body>
+    </html>
+    """
 
 if __name__ == "__main__":
     import uvicorn
