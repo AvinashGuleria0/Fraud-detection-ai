@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,8 +13,13 @@ import {
   FiLock,
   FiBarChart2,
   FiGlobe,
+  FiUpload,
+  FiImage,
+  FiX,
+  FiDatabase
 } from 'react-icons/fi';
 import { supabase } from './supabaseClient';
+import MediaVerifier from './components/MediaVerifier';
 
 const partners = ['Razorpay', 'Twilio', 'Stripe', 'PayPal', 'Visa', 'Mastercard'];
 
@@ -87,13 +92,44 @@ const trustCards = [
 
 function App() {
   const [message, setMessage] = useState('');
+  const [file, setFile] = useState(null);
+  const [deviceId, setDeviceId] = useState('DEV-ALPHA001');
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState(null);
+  const [textResult, setTextResult] = useState(null);
+  const [mediaResult, setMediaResult] = useState(null);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [ledgerData, setLedgerData] = useState([]);
+  
+  // Auth Modal State
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  const fileInputRef = useRef(null);
+
+  const fetchLedger = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const resp = await fetch(`${apiUrl}/api/media/blockchain`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.chain) {
+          setLedgerData(data.chain.filter(b => b.index > 0).reverse());
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch ledger:', err);
+    }
+  };
 
   useEffect(() => {
     console.log('🔐 Auth useEffect running');
+    
+    fetchLedger();
     
     if (!supabase) {
       console.log('❌ Supabase not configured');
@@ -121,132 +157,134 @@ function App() {
     };
   }, []);
 
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+      setMediaResult(null);
+      setError('');
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
+      setMediaResult(null);
+      setError('');
+    }
+  };
+
   const handleAnalyze = async () => {
     console.log('🚀 handleAnalyze called');
     
-    if (!message.trim()) {
-      console.log('❌ Message is empty, showing error');
-      setError('Please paste a message to analyze.');
+    if (!message.trim() && !file) {
+      console.log('❌ Message and file are empty, showing error');
+      setError('Please paste a message or attach a file to analyze.');
       return;
     }
 
-    console.log('📝 Message to analyze:', message);
     setError('');
     setAnalyzing(true);
-    setResult(null);
+    setTextResult(null);
+    setMediaResult(null);
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      console.log(`🌐 Sending POST request to ${apiUrl}/predict`);
-      console.log('📦 Payload:', { message });
-      
-      const response = await axios.post(`${apiUrl}/predict`, { message });
-      
-      console.log('✅ Received response from backend:', response.status);
-      console.log('📊 Response data:', response.data);
-      
-      const data = response.data;
-      
-      console.log('🎯 Setting result with confidence_score:', data.confidence_score);
-      console.log('🚨 is_fraud:', data.is_fraud);
-      console.log('💬 explanation:', data.explanation);
-      
-      setResult(data);
+      const promises = [];
 
-      if (user && supabase) {
-        console.log('💾 User is authenticated, saving to Supabase');
-        console.log('👤 User ID:', user.id);
-        
-        const insertPayload = {
-          user_id: user.id,
-          original_sms_text: message,
-          ml_confidence_score: data.confidence_score,
-          is_fraud: data.is_fraud,
-          llm_explanation: data.explanation,
-        };
-        
-        console.log('📤 Supabase insert payload:', insertPayload);
-        
-        const { error: insertError } = await supabase.from('messages').insert([insertPayload]);
-        
-        if (insertError) {
-          console.log('⚠️ Supabase insert error (table might not exist):', insertError);
-        } else {
-          console.log('✅ Successfully saved message to Supabase');
-        }
-      } else {
-        console.log('ℹ️ User not authenticated or Supabase not configured, skipping save');
+      if (message.trim()) {
+        const textPromise = axios.post(`${apiUrl}/predict`, { message })
+          .then(async (response) => {
+            const data = response.data;
+            setTextResult(data);
+
+            if (user && supabase) {
+              const insertPayload = {
+                user_id: user.id,
+                original_sms_text: message,
+                ml_confidence_score: data.confidence_score,
+                is_fraud: data.is_fraud,
+                llm_explanation: data.explanation,
+              };
+              const { error: insertError } = await supabase.from('messages').insert([insertPayload]);
+              if (insertError) console.log('⚠️ Supabase insert error:', insertError);
+            }
+          });
+        promises.push(textPromise);
       }
+
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('device_id', deviceId);
+
+        const mediaPromise = axios.post(`${apiUrl}/api/media/analyze`, formData)
+          .then(response => {
+            setMediaResult(response.data);
+            fetchLedger();
+          });
+        promises.push(mediaPromise);
+      }
+
+      await Promise.all(promises);
+
     } catch (err) {
       console.error('❌ Error in handleAnalyze:', err);
-      console.error('📋 Full error object:', err);
-      
-      if (err.response) {
-        console.error('🔴 Backend returned error status:', err.response.status);
-        console.error('📄 Error response data:', err.response.data);
-      } else if (err.request) {
-        console.error('🔴 Request made but no response received:', err.request);
-      } else {
-        console.error('🔴 Error setting up request:', err.message);
-      }
-      
-      setError(err.response?.data?.detail || 'Failed to analyze message. Ensure backend is running.');
+      setError(err.response?.data?.detail || err.message || 'Analysis failed. Ensure backend is running.');
     } finally {
       console.log('🏁 Analysis complete, setting analyzing to false');
       setAnalyzing(false);
     }
   };
 
-  const handleAuth = async (isLogin) => {
-    console.log(`🔑 handleAuth called with isLogin=${isLogin}`);
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
     
     if (!supabase) {
-      console.log('❌ Supabase not configured');
-      alert('Supabase credentials missing in frontend/.env');
+      setAuthError('Supabase credentials missing.');
       return;
     }
 
-    const email = prompt('Enter Email:');
-    if (!email) {
-      console.log('ℹ️ Email prompt cancelled');
-      return;
-    }
-    
-    console.log('📧 Email entered:', email);
-
-    const password = prompt('Enter Password:');
-    if (!password) {
-      console.log('ℹ️ Password prompt cancelled');
-      return;
-    }
-    
-    console.log('🔒 Password entered (length:', password.length, ')');
-
-    if (isLogin) {
-      console.log('🔓 Attempting login...');
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    if (authMode === 'login') {
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({ 
+        email: authEmail, 
+        password: authPassword 
+      });
       
       if (loginError) {
-        console.error('❌ Login error:', loginError.message);
-        alert(loginError.message);
+        setAuthError(loginError.message);
       } else {
-        console.log('✅ Login successful for:', email);
+        localStorage.setItem('userData', JSON.stringify({ email: authEmail, name: authName || data.user?.user_metadata?.name || '' }));
+        setShowAuthModal(false);
+        setAuthEmail('');
+        setAuthPassword('');
+        setAuthName('');
       }
     } else {
-      console.log('📝 Attempting signup...');
-      const { error: signupError } = await supabase.auth.signUp({ email, password });
+      const { data, error: signupError } = await supabase.auth.signUp({ 
+        email: authEmail, 
+        password: authPassword,
+        options: {
+          data: {
+             name: authName
+          }
+        }
+      });
       
       if (signupError) {
-        console.error('❌ Signup error:', signupError.message);
-        alert(signupError.message);
+        setAuthError(signupError.message);
       } else {
-        console.log('✅ Signup successful for:', email);
-        alert('Check your email for a confirmation link!');
+        localStorage.setItem('userData', JSON.stringify({ email: authEmail, name: authName }));
+        setShowAuthModal(false);
+        setAuthEmail('');
+        setAuthPassword('');
+        setAuthName('');
       }
     }
   };
 
-  const confidence = Math.max(0, Math.min(100, Number(result?.confidence_score || 0)));
+  const confidence = Math.max(0, Math.min(100, Number(textResult?.confidence_score || 0)));
 
   return (
     <div className="min-h-screen text-slate-900">
@@ -275,13 +313,13 @@ function App() {
           ) : (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handleAuth(true)}
+                onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
                 className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <FiLogIn /> Log in
               </button>
               <button
-                onClick={() => handleAuth(false)}
+                onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
                 className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500"
               >
                 <FiUserPlus /> Sign up
@@ -299,10 +337,10 @@ function App() {
             </p>
             <h2 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-5xl">
               Analyze every suspicious text
-              <span className="block text-violet-600">before it becomes loss.</span>
+              <span className="block text-violet-600">and media file instantly.</span>
             </h2>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
-              Control your fraud workflow from a single dashboard. Paste unknown messages, detect risk instantly, and store explainable decisions for audit trails.
+              Control your fraud workflow from a single dashboard. Paste unknown messages, drop media files, detect risk instantly, and store explainable decisions for audit trails.
             </p>
 
             <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -324,16 +362,54 @@ function App() {
             className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.3)]"
           >
             <div className="mb-3 flex items-end justify-between">
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Message Analyzer</p>
-              <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">{message.length} chars</span>
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Multimodal Analyzer</p>
+              <div className="flex gap-2 text-xs font-medium text-slate-500">
+                <span className="rounded-md bg-slate-100 px-2 py-1">{message.length} chars</span>
+                <select 
+                  value={deviceId} 
+                  onChange={e => setDeviceId(e.target.value)}
+                  className="rounded-md bg-slate-100 outline-none border border-transparent focus:border-violet-300 py-1"
+                >
+                  <option value="DEV-ALPHA001">Device: Canon EOS R5</option>
+                  <option value="DEV-BETA002">Device: iPhone 15 Pro</option>
+                  <option value="DEV-UNKNOWN">Device: Unknown</option>
+                </select>
+              </div>
             </div>
 
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Example: URGENT! Your KYC expired. Click this link to avoid account block..."
-              className="min-h-[180px] w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base leading-relaxed text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
-            />
+            <div 
+              className={`relative rounded-2xl border-2 border-dashed ${file ? 'border-violet-400 bg-violet-50/30' : 'border-slate-200 bg-slate-50'} transition-colors focus-within:border-violet-400`}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+            >
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Paste suspicious text here, or drop a media file..."
+                className="min-h-[160px] w-full resize-y bg-transparent p-4 text-base leading-relaxed text-slate-700 outline-none"
+              />
+              
+              <div className="flex items-center justify-between border-t border-slate-200/60 bg-white/50 p-3">
+                <div className="flex items-center gap-3">
+                  <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                     <FiUpload /> Attach Media
+                  </button>
+                  {file && (
+                    <div className="flex items-center gap-2 rounded-lg bg-violet-100 px-3 py-1.5 text-sm font-semibold text-violet-700">
+                      <FiImage />
+                      <span className="truncate max-w-[150px]">{file.name}</span>
+                      <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="hover:text-violet-900 ml-1">
+                        <FiX />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="mt-4 flex flex-col gap-3">
               {error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600">{error}</p> : null}
@@ -355,7 +431,7 @@ function App() {
             </div>
 
             <AnimatePresence>
-              {result ? (
+              {textResult ? (
                 <motion.div
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -364,22 +440,65 @@ function App() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
-                      {result.is_fraud ? <FiAlertTriangle className="text-rose-500" /> : <FiCheckCircle className="text-emerald-500" />}
-                      {result.is_fraud ? 'Fraud Signal Detected' : 'Message Looks Safe'}
+                      {textResult.is_fraud ? <FiAlertTriangle className="text-rose-500" /> : <FiCheckCircle className="text-emerald-500" />}
+                      {textResult.is_fraud ? 'Text Fraud Detected' : 'Text Looks Safe'}
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${result.is_fraud ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${textResult.is_fraud ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
                       {confidence}% Confidence
                     </span>
                   </div>
 
                   <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
                     <div
-                      className={`h-full rounded-full ${result.is_fraud ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                      className={`h-full rounded-full ${textResult.is_fraud ? 'bg-rose-500' : 'bg-emerald-500'}`}
                       style={{ width: `${confidence}%` }}
                     />
                   </div>
 
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{result.explanation}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{textResult.explanation}</p>
+                </motion.div>
+              ) : null}
+
+              {mediaResult ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
+                      {mediaResult.distribution.trust_score < 2 ? <FiAlertTriangle className="text-amber-500" /> : <FiCheckCircle className="text-emerald-500" />}
+                      Media: {mediaResult.distribution.badge}
+                    </div>
+                    <span className="rounded-full px-3 py-1 text-xs font-bold bg-slate-200 text-slate-700">
+                      AI Conf: {(mediaResult.verification.ensemble_confidence * 100).toFixed(1)}%
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="font-semibold text-slate-700 mb-1">Layer 1: Capture</p>
+                      <p className="text-slate-500 text-xs truncate">Device: {mediaResult.capture.device_model}</p>
+                      <p className={`text-xs mt-1 ${mediaResult.capture.pki_verified ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        PKI: {mediaResult.capture.pki_verified ? 'Verified' : 'Failed'}
+                      </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <p className="font-semibold text-slate-700 mb-1">Layer 2: AI Verify</p>
+                      <p className="text-slate-500 text-xs">Spatial: {(mediaResult.verification.models.xception_cnn * 100).toFixed(1)}%</p>
+                      <p className="text-slate-500 text-xs">Noise: {(mediaResult.verification.models.noise_pattern_cnn * 100).toFixed(1)}%</p>
+                    </div>
+                  </div>
+
+                  {mediaResult.verification.risk_factors.length > 0 && (
+                    <div className="mt-3 bg-rose-50/50 p-3 rounded-xl border border-rose-100">
+                      <p className="text-xs font-semibold text-rose-800 mb-1">Risk Factors:</p>
+                      <ul className="text-xs text-rose-600 list-disc pl-4">
+                        {mediaResult.verification.risk_factors.map((r, i) => <li key={i}>{r}</li>)}
+                      </ul>
+                    </div>
+                  )}
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -477,7 +596,141 @@ function App() {
             ))}
           </div>
         </section>
+
+        <section className="mt-14 rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+          <div className="text-center flex justify-center items-center gap-3">
+            <FiDatabase className="text-xl text-slate-500" />
+            <h3 className="text-3xl font-extrabold tracking-tight text-slate-900">Immutable Media Ledger</h3>
+          </div>
+          <div className="mt-6 font-mono text-xs">
+            {ledgerData.length === 0 ? (
+              <div className="text-center text-slate-500 py-10 bg-slate-50 rounded-xl border border-slate-100">No media verifications recorded.</div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {ledgerData.map((block) => (
+                  <div key={block.hash} className="p-4 bg-slate-900 text-slate-300 rounded-xl flex flex-col gap-1 overflow-x-auto shadow-inner">
+                    <div className="flex justify-between items-center text-emerald-400 mb-2 border-b border-slate-700 pb-2">
+                      <span>Block #{block.index}</span>
+                      <span>{new Date(block.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div className="grid grid-cols-[100px_1fr] gap-2">
+                      <span className="text-slate-500">Hash:</span> <span className="truncate" title={block.data.content_hash}>{block.data.content_hash}</span>
+                      <span className="text-slate-500">Verdict:</span> <span className="text-white">{block.data.verdict}</span>
+                      <span className="text-slate-500">AI Conf:</span> <span className="text-white">{(block.data.ai_confidence * 100).toFixed(1)}%</span>
+                      <span className="text-slate-500">Block Hash:</span> <span className="text-slate-400 truncate text-[10px]">{block.hash}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
       </main>
+
+      {/* Auth Modal Overlay */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+            >
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <FiX className="text-xl" />
+              </button>
+              
+              <div className="p-6 md:p-8">
+                <div className="mb-6 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+                    <FiShield className="text-2xl" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    {authMode === 'login' ? 'Welcome back' : 'Create an account'}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {authMode === 'login' 
+                      ? 'Enter your details to access your dashboard' 
+                      : 'Join FraudGuard AI to start protecting your users'
+                    }
+                  </p>
+                </div>
+
+                <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
+                  {authError && (
+                    <div className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-600 border border-rose-200">
+                      {authError}
+                    </div>
+                  )}
+
+                  {authMode === 'signup' && (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Full Name</label>
+                      <input
+                        type="text"
+                        required={authMode === 'signup'}
+                        value={authName}
+                        onChange={(e) => setAuthName(e.target.value)}
+                        className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        placeholder="John Doe"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      placeholder="name@company.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      placeholder="••••••••"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="mt-2 w-full rounded-xl bg-violet-600 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-500"
+                  >
+                    {authMode === 'login' ? 'Sign in to account' : 'Create account'}
+                  </button>
+                </form>
+
+                <div className="mt-6 text-center text-sm text-slate-500">
+                  {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
+                  <button
+                    onClick={() => {
+                      setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                      setAuthError('');
+                    }}
+                    className="font-bold text-violet-600 hover:text-violet-700 hover:underline"
+                  >
+                    {authMode === 'login' ? 'Sign up' : 'Log in'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

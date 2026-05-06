@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -9,6 +9,10 @@ import sys
 
 # Import the service for the LLM
 from services.groq_llm import analyze_message_with_llama
+from services.ai_truth import ai_engine, blockchain, records_db, TRUSTED_DEVICES, compute_sha256
+from datetime import datetime, timezone
+import time
+import uuid
 
 import re
 
@@ -238,6 +242,151 @@ def predict_fraud(req: MessageRequest):
         print(traceback.format_exc())
         print("="*80 + "\n")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@app.post("/api/media/analyze")
+async def analyze_media(file: UploadFile = File(...), device_id: str = Form("DEV-UNKNOWN")):
+    print("\n" + "="*80)
+    print("🚀 [MEDIA ANALYZE ENDPOINT CALLED]")
+    print(f"  - Filename: {file.filename}")
+    print(f"  - Device ID: {device_id}")
+    
+    file_bytes = await file.read()
+    if len(file_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    t0 = time.time()
+
+    # ── Layer 1: Capture ──
+    content_hash = compute_sha256(file_bytes)
+    device_info  = TRUSTED_DEVICES.get(device_id, TRUSTED_DEVICES["DEV-UNKNOWN"])
+    import hashlib
+    device_sig   = hashlib.sha256(f"{device_id}{content_hash}".encode()).hexdigest()
+
+    capture = {
+        "device_id":     device_id,
+        "device_make":   device_info["make"],
+        "device_model":  device_info["model"],
+        "device_certified": device_info["certified"],
+        "tee_backed":    device_info["tee"],
+        "content_hash":  content_hash,
+        "device_signature": device_sig,
+        "capture_time":  datetime.now(timezone.utc).isoformat(),
+        "pki_verified":  device_info["certified"],
+    }
+
+    # ── Layer 2: AI Verification ──
+    ai_result = ai_engine.analyze(file_bytes, file.filename)
+
+    # ── Layer 3: Ledger ──
+    ledger_record = {
+        "type":              "CONTENT_VERIFICATION",
+        "content_hash":      content_hash,
+        "filename":          file.filename,
+        "device_id":         device_id,
+        "ai_confidence":     ai_result["ensemble_confidence"],
+        "verdict":           ai_result["verdict"],
+        "timestamp":         datetime.now(timezone.utc).isoformat(),
+    }
+    block = blockchain.add_record(ledger_record)
+    merkle_root = blockchain.merkle_roots[-1] if blockchain.merkle_roots else "N/A"
+
+    ledger = {
+        "block_index":    block.index,
+        "block_hash":     block.hash,
+        "prev_hash":      block.prev_hash,
+        "merkle_root":    merkle_root,
+        "chain_valid":    blockchain.verify_chain(),
+        "chain_length":   len(blockchain.chain),
+        "anchored_to":    "Ethereum L2 (Polygon) — Simulated",
+    }
+
+    # ── Layer 4: Distribution / Three-Way Match ──
+    existing = blockchain.find_record(content_hash)
+    hash_match    = existing is not None
+    ai_pass       = ai_result["ensemble_confidence"] >= 0.55
+    device_trust  = device_info["certified"]
+
+    if hash_match and ai_pass and device_trust:
+        trust_level = "VERIFIED"
+        trust_score = 3
+    elif (hash_match or ai_pass) and device_trust:
+        trust_level = "PARTIAL"
+        trust_score = 2
+    elif ai_pass:
+        trust_level = "AI-ONLY"
+        trust_score = 1
+    else:
+        trust_level = "UNVERIFIED"
+        trust_score = 0
+
+    distribution = {
+        "three_way_match": {
+            "content_hash_match": hash_match,
+            "ai_confidence_pass": ai_pass,
+            "device_origin_trusted": device_trust,
+        },
+        "trust_level":  trust_level,
+        "trust_score":  trust_score,
+        "c2pa_compatible": True,
+        "badge": trust_level,
+        "verification_url": f"http://localhost:8000/api/media/verify?hash={content_hash[:16]}",
+    }
+
+    elapsed = round((time.time() - t0) * 1000, 1)
+
+    full_record = {
+        "id":           str(uuid.uuid4()),
+        "filename":     file.filename,
+        "timestamp":    datetime.now(timezone.utc).isoformat(),
+        "elapsed_ms":   elapsed,
+        "capture":      capture,
+        "verification": ai_result,
+        "ledger":       ledger,
+        "distribution": distribution,
+    }
+
+    records_db[content_hash] = full_record
+    
+    print("\n✅ [MEDIA ANALYZE ENDPOINT SUCCESS]")
+    print(f"  - Verdict: {ai_result['verdict']} ({ai_result['ensemble_confidence']})")
+    print("="*80 + "\n")
+    
+    return full_record
+
+@app.get("/api/media/verify")
+def verify_media(hash: str):
+    match = None
+    for k, v in records_db.items():
+        if k.startswith(hash) or hash.startswith(k[:16]):
+            match = v
+            break
+
+    if match:
+        return {"found": True, "record": match}
+    else:
+        return {"found": False, "message": "Hash not found in ledger"}
+
+@app.get("/api/media/blockchain")
+def get_blockchain():
+    chain_data = [b.to_dict() for b in blockchain.chain[-20:]]
+    return {"chain": chain_data, "length": len(blockchain.chain), "valid": blockchain.verify_chain()}
+
+@app.get("/api/media/records")
+def get_records():
+    return {"records": list(records_db.values()), "total": len(records_db)}
+
+@app.get("/api/media/stats")
+def get_stats():
+    total = len(records_db)
+    verified = sum(1 for r in records_db.values() if r["distribution"]["trust_level"] == "VERIFIED")
+    suspicious = sum(1 for r in records_db.values() if r["verification"]["verdict"] in ("SUSPICIOUS", "SYNTHETIC / MANIPULATED"))
+    return {
+        "total_analyzed": total,
+        "verified": verified,
+        "suspicious": suspicious,
+        "chain_length": len(blockchain.chain),
+        "chain_valid": blockchain.verify_chain(),
+    }
 
 from fastapi.responses import HTMLResponse
 
