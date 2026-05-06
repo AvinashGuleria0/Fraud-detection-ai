@@ -271,45 +271,45 @@ function App() {
   return (
     <div className="min-h-screen text-slate-900">
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-violet-600/10 p-2 text-violet-700">
-              <FiShield className="text-xl" />
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <span className="rounded-xl bg-violet-600/10 p-1.5 md:p-2 text-violet-700">
+              <FiShield className="text-lg md:text-xl" />
             </span>
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 md:text-2xl">FraudGuard AI</h1>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Smart Message Defense</p>
+              <h1 className="text-lg font-extrabold tracking-tight text-slate-900 md:text-2xl">FraudGuard AI</h1>
+              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500 md:text-xs md:tracking-[0.18em]">Smart Message Defense</p>
             </div>
           </div>
 
           {userData ? (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-bold text-xs shadow-sm">
+            <div className="flex items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <div className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-bold text-[10px] md:text-xs shadow-sm">
                   {userData.name?.charAt(0).toUpperCase() || "U"}
                 </div>
-                <span className="text-sm font-semibold text-slate-700">Hi, {userData.name || "User"}</span>
+                <span className="hidden sm:inline text-sm font-semibold text-slate-700">Hi, {userData.name || "User"}</span>
               </div>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
-                <FiLogOut /> Logout
+                <FiLogOut /> <span className="hidden xs:inline">Logout</span>
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 md:gap-2">
               <button
                 onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
-                <FiLogIn /> Log in
+                <FiLogIn /> <span className="hidden xs:inline">Log in</span>
               </button>
               <button
                 onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500"
+                className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg bg-violet-600 px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500"
               >
-                <FiUserPlus /> Sign up
+                <FiUserPlus /> <span className="hidden xs:inline">Sign up</span>
               </button>
             </div>
           )}
@@ -346,20 +346,20 @@ function App() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.06 }}
-            className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.3)]"
+            className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.3)]"
           >
-            <div className="mb-3 flex items-end justify-between">
+            <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Multimodal Analyzer</p>
-              <div className="flex gap-2 text-xs font-medium text-slate-500">
+              <div className="flex flex-wrap items-center gap-2 text-[10px] md:text-xs font-medium text-slate-500">
                 <span className="rounded-md bg-slate-100 px-2 py-1">{message.length} chars</span>
                 <select 
                   value={deviceId} 
                   onChange={e => setDeviceId(e.target.value)}
-                  className="rounded-md bg-slate-100 outline-none border border-transparent focus:border-violet-300 py-1"
+                  className="rounded-md bg-slate-100 outline-none border border-transparent focus:border-violet-300 py-1 px-1 max-w-[140px] md:max-w-none"
                 >
-                  <option value="DEV-ALPHA001">Device: Canon EOS R5</option>
-                  <option value="DEV-BETA002">Device: iPhone 15 Pro</option>
-                  <option value="DEV-UNKNOWN">Device: Unknown</option>
+                  <option value="DEV-ALPHA001">Canon EOS R5</option>
+                  <option value="DEV-BETA002">iPhone 15 Pro</option>
+                  <option value="DEV-UNKNOWN">Unknown Device</option>
                 </select>
               </div>
             </div>
@@ -372,23 +372,23 @@ function App() {
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Paste suspicious text here, or drop a media file..."
-                className="min-h-[160px] w-full resize-y bg-transparent p-4 text-base leading-relaxed text-slate-700 outline-none"
+                placeholder="Paste text here, or drop a file..."
+                className="min-h-[140px] md:min-h-[160px] w-full resize-y bg-transparent p-3 md:p-4 text-sm md:text-base leading-relaxed text-slate-700 outline-none"
               />
               
-              <div className="flex items-center justify-between border-t border-slate-200/60 bg-white/50 p-3">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/60 bg-white/50 p-2 md:p-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 rounded-lg bg-white border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                    className="flex items-center gap-1.5 md:gap-2 rounded-lg bg-white border border-slate-200 px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm font-semibold text-slate-600 hover:bg-slate-50"
                   >
-                     <FiUpload /> Attach Media
+                     <FiUpload /> <span className="hidden xxs:inline">Attach Media</span><span className="xxs:hidden">Attach</span>
                   </button>
                   {file && (
-                    <div className="flex items-center gap-2 rounded-lg bg-violet-100 px-3 py-1.5 text-sm font-semibold text-violet-700">
-                      <FiImage />
-                      <span className="truncate max-w-[150px]">{file.name}</span>
+                    <div className="flex items-center gap-1.5 md:gap-2 rounded-lg bg-violet-100 px-2 py-1 md:px-3 md:py-1.5 text-[10px] md:text-sm font-semibold text-violet-700">
+                      <FiImage className="flex-shrink-0" />
+                      <span className="truncate max-w-[80px] md:max-w-[150px]">{file.name}</span>
                       <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="hover:text-violet-900 ml-1">
                         <FiX />
                       </button>
@@ -692,15 +692,15 @@ function App() {
                 <FiX className="text-xl" />
               </button>
               
-              <div className="p-6 md:p-8">
+              <div className="p-5 md:p-8">
                 <div className="mb-6 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
-                    <FiShield className="text-2xl" />
+                  <div className="mx-auto mb-3 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+                    <FiShield className="text-xl md:text-2xl" />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900">
+                  <h2 className="text-xl md:text-2xl font-bold text-slate-900">
                     {authMode === 'login' ? 'Welcome back' : 'Create an account'}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-xs md:text-sm text-slate-500">
                     {authMode === 'login' 
                       ? 'Enter your details to access your dashboard' 
                       : 'Join FraudGuard AI to start protecting your users'
@@ -708,70 +708,69 @@ function App() {
                   </p>
                 </div>
 
-                <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
+                <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3 md:gap-4">
                   {authError && (
-                    <div className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-600 border border-rose-200">
+                    <div className="rounded-lg bg-rose-50 p-2.5 md:p-3 text-xs md:text-sm font-medium text-rose-600 border border-rose-200">
                       {authError}
                     </div>
                   )}
 
                   {authMode === 'signup' && (
                     <div>
-                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Full Name</label>
+                      <label className="mb-1 block md:mb-1.5 text-xs md:text-sm font-semibold text-slate-700">Full Name</label>
                       <input
                         type="text"
                         required={authMode === 'signup'}
                         value={authName}
                         onChange={(e) => setAuthName(e.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 md:px-4 md:py-2.5 text-sm md:text-base text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                         placeholder="John Doe"
                       />
                     </div>
                   )}
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email Address</label>
+                    <label className="mb-1 block md:mb-1.5 text-xs md:text-sm font-semibold text-slate-700">Email Address</label>
                     <input
                       type="email"
                       required
                       value={authEmail}
                       onChange={(e) => setAuthEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 md:px-4 md:py-2.5 text-sm md:text-base text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                       placeholder="name@company.com"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
+                    <label className="mb-1 block md:mb-1.5 text-xs md:text-sm font-semibold text-slate-700">Password</label>
                     <input
                       type="password"
                       required
                       value={authPassword}
                       onChange={(e) => setAuthPassword(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 md:px-4 md:py-2.5 text-sm md:text-base text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                       placeholder="••••••••"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="mt-2 w-full rounded-xl bg-violet-600 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-500"
+                    className="mt-2 w-full rounded-xl bg-violet-600 py-2.5 md:py-3 text-sm md:text-base font-bold text-white shadow-lg transition hover:bg-violet-700 active:scale-[0.98]"
                   >
-                    {authMode === 'login' ? 'Sign in to account' : 'Create account'}
+                    {authMode === 'login' ? 'Log in to Dashboard' : 'Create Account'}
                   </button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-slate-500">
-                  {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
-                  <button
-                    onClick={() => {
-                      setAuthMode(authMode === 'login' ? 'signup' : 'login');
-                      setAuthError('');
-                    }}
-                    className="font-bold text-violet-600 hover:text-violet-700 hover:underline"
-                  >
-                    {authMode === 'login' ? 'Sign up' : 'Log in'}
-                  </button>
+                <div className="mt-5 md:mt-6 text-center">
+                  <p className="text-xs md:text-sm text-slate-600">
+                    {authMode === 'login' ? "Don't have an account?" : "Already have an account?"}{' '}
+                    <button
+                      onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                      className="font-bold text-violet-600 hover:underline"
+                    >
+                      {authMode === 'login' ? 'Sign up' : 'Log in'}
+                    </button>
+                  </p>
                 </div>
               </div>
             </motion.div>
