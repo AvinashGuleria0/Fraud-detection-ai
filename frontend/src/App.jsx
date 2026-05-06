@@ -466,36 +466,96 @@ function App() {
                   exit={{ opacity: 0, y: -10 }}
                   className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
-                      {mediaResult.distribution.trust_score < 2 ? <FiAlertTriangle className="text-amber-500" /> : <FiCheckCircle className="text-emerald-500" />}
-                      Media: {mediaResult.distribution.badge}
+                  {/* Detailed Media Analysis Result Header */}
+                  <div className="flex flex-col gap-3 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
+                        {mediaResult.distribution.trust_score < 2 ? <FiAlertTriangle className="text-amber-500" /> : <FiCheckCircle className="text-emerald-500" />}
+                        Media Verdict
+                      </div>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
+                          mediaResult.distribution.trust_score < 2
+                            ? "bg-amber-100 text-amber-700 border border-amber-200"
+                            : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                        }`}
+                      >
+                        {mediaResult.distribution.badge}
+                      </span>
                     </div>
-                    <span className="rounded-full px-3 py-1 text-xs font-bold bg-slate-200 text-slate-700">
-                      AI Conf: {(mediaResult.verification.ensemble_confidence * 100).toFixed(1)}%
-                    </span>
+
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
+                        AI Confidence
+                      </div>
+                      <span className="text-sm font-black text-slate-900">
+                        {(mediaResult.verification.ensemble_confidence * 100).toFixed(1)}%
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                      <p className="font-semibold text-slate-700 mb-1">Layer 1: Capture</p>
-                      <p className="text-slate-500 text-xs truncate">Device: {mediaResult.capture.device_model}</p>
-                      <p className={`text-xs mt-1 ${mediaResult.capture.pki_verified ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        PKI: {mediaResult.capture.pki_verified ? 'Verified' : 'Failed'}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {/* Layer 1: Capture Details */}
+                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                      <p className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2.5">
+                        Layer 1: Capture
                       </p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-slate-500">Device:</span>
+                          <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={`${mediaResult.capture.device_make} ${mediaResult.capture.device_model}`}>
+                            {mediaResult.capture.device_make} {mediaResult.capture.device_model}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-slate-500">PKI:</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              mediaResult.capture.pki_verified
+                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                : "bg-rose-50 text-rose-600 border border-rose-100"
+                            }`}
+                          >
+                            {mediaResult.capture.pki_verified ? "Verified" : "Unverified"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                      <p className="font-semibold text-slate-700 mb-1">Layer 2: AI Verify</p>
-                      <p className="text-slate-500 text-xs">Spatial: {(mediaResult.verification.models.xception_cnn * 100).toFixed(1)}%</p>
-                      <p className="text-slate-500 text-xs">Noise: {(mediaResult.verification.models.noise_pattern_cnn * 100).toFixed(1)}%</p>
+
+                    {/* Layer 2: AI Verify Details */}
+                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                      <p className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2.5">
+                        Layer 2: AI Verify
+                      </p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500">Spatial:</span>
+                          <span className="font-semibold text-slate-700">
+                            {(mediaResult.verification.models.xception_cnn * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500">Noise:</span>
+                          <span className="font-semibold text-slate-700">
+                            {(mediaResult.verification.models.noise_pattern_cnn * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {mediaResult.verification.risk_factors.length > 0 && (
-                    <div className="mt-3 bg-rose-50/50 p-3 rounded-xl border border-rose-100">
-                      <p className="text-xs font-semibold text-rose-800 mb-1">Risk Factors:</p>
-                      <ul className="text-xs text-rose-600 list-disc pl-4">
-                        {mediaResult.verification.risk_factors.map((r, i) => <li key={i}>{r}</li>)}
+                    <div className="mt-4 bg-rose-50/70 p-3.5 rounded-xl border border-rose-100">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-rose-800 mb-2">
+                        Risk Factors Identified
+                      </p>
+                      <ul className="text-xs text-rose-600 space-y-1.5 list-none">
+                        {mediaResult.verification.risk_factors.map((r, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="mt-1 h-1 w-1 rounded-full bg-rose-400 flex-shrink-0" />
+                            {r}
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   )}
