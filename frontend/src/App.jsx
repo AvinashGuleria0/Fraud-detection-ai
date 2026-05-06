@@ -98,7 +98,7 @@ function App() {
   const [textResult, setTextResult] = useState(null);
   const [mediaResult, setMediaResult] = useState(null);
   const [error, setError] = useState('');
-  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [ledgerData, setLedgerData] = useState([]);
   
   // Auth Modal State
@@ -127,34 +127,13 @@ function App() {
   };
 
   useEffect(() => {
-    console.log('🔐 Auth useEffect running');
-    
     fetchLedger();
     
-    if (!supabase) {
-      console.log('❌ Supabase not configured');
-      return;
+    // Check for local session
+    const storedUser = localStorage.getItem('userData');
+    if (storedUser) {
+      setUserData(JSON.parse(storedUser));
     }
-
-    console.log('🔍 Checking current session...');
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('📊 Current session:', session ? `User: ${session.user.email}` : 'No session');
-      setUser(session?.user ?? null);
-    });
-
-    console.log('👁️ Setting up auth state change listener');
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('🔄 Auth state changed, event:', _event);
-      console.log('👤 New user:', session?.user?.email || 'No user');
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      console.log('🧹 Cleaning up auth subscription');
-      subscription.unsubscribe();
-    };
   }, []);
 
   const handleFileChange = (e) => {
@@ -237,52 +216,55 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('userData');
+    setUserData(null);
+  };
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
     
-    if (!supabase) {
-      setAuthError('Supabase credentials missing.');
+    // Simple LocalStorage-only Auth Logic
+    if (authMode === 'login') {
+      const storedUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      const user = storedUsers.find(u => u.email === authEmail && u.password === authPassword);
+      
+      if (user) {
+        const userObj = { email: user.email, name: user.name };
+        localStorage.setItem('userData', JSON.stringify(userObj));
+        setUserData(userObj);
+        setShowAuthModal(false);
+        setAuthEmail('');
+        setAuthPassword('');
+      } else {
+        setAuthError('Invalid email or password.');
+      }
+    } else {
+      if (authPassword.length < 6) {
+      setAuthError('Password must be at least 6 characters.');
+      return;
+    }
+    
+    const storedUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    if (storedUsers.some(u => u.email === authEmail)) {
+      setAuthError('Email already registered. Try logging in.');
       return;
     }
 
-    if (authMode === 'login') {
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({ 
-        email: authEmail, 
-        password: authPassword 
-      });
-      
-      if (loginError) {
-        setAuthError(loginError.message);
-      } else {
-        localStorage.setItem('userData', JSON.stringify({ email: authEmail, name: authName || data.user?.user_metadata?.name || '' }));
-        setShowAuthModal(false);
-        setAuthEmail('');
-        setAuthPassword('');
-        setAuthName('');
-      }
-    } else {
-      const { data, error: signupError } = await supabase.auth.signUp({ 
-        email: authEmail, 
-        password: authPassword,
-        options: {
-          data: {
-             name: authName
-          }
-        }
-      });
-      
-      if (signupError) {
-        setAuthError(signupError.message);
-      } else {
-        localStorage.setItem('userData', JSON.stringify({ email: authEmail, name: authName }));
-        setShowAuthModal(false);
-        setAuthEmail('');
-        setAuthPassword('');
-        setAuthName('');
-      }
-    }
-  };
+    const newUser = { email: authEmail, password: authPassword, name: authName };
+    storedUsers.push(newUser);
+    localStorage.setItem('registeredUsers', JSON.stringify(storedUsers));
+    
+    const userObj = { email: authEmail, name: authName };
+    localStorage.setItem('userData', JSON.stringify(userObj));
+    setUserData(userObj);
+    setShowAuthModal(false);
+    setAuthEmail('');
+    setAuthPassword('');
+    setAuthName('');
+  }
+};
 
   const confidence = Math.max(0, Math.min(100, Number(textResult?.confidence_score || 0)));
 
@@ -300,11 +282,16 @@ function App() {
             </div>
           </div>
 
-          {user ? (
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm font-medium text-slate-500 md:inline">{user.email}</span>
+          {userData ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-bold text-xs shadow-sm">
+                  {userData.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <span className="text-sm font-semibold text-slate-700">Hi, {userData.name || "User"}</span>
+              </div>
               <button
-                onClick={() => supabase.auth.signOut()}
+                onClick={handleLogout}
                 className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <FiLogOut /> Logout
