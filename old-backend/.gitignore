@@ -1,0 +1,25 @@
+# Environments
+.env
+.env.*
+.venv
+venv/
+env/
+ENV/
+
+# Python caching
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Models - Actually, you MIGHT want to push the trained models so Render can use them.
+# If you train on Render, you ignore them, but since you train locally, let's keep them!
+# ml_models/*.pkl 
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
