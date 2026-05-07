@@ -100,6 +100,7 @@ function App() {
   const [error, setError] = useState('');
   const [userData, setUserData] = useState(null);
   const [ledgerData, setLedgerData] = useState([]);
+  const [searchHistory, setSearchHistory] = useState([]);
   
   // Auth Modal State
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -133,6 +134,11 @@ function App() {
     const storedUser = localStorage.getItem('userData');
     if (storedUser) {
       setUserData(JSON.parse(storedUser));
+    }
+
+    const storedHistory = localStorage.getItem('searchHistory');
+    if (storedHistory) {
+      setSearchHistory(JSON.parse(storedHistory));
     }
   }, []);
 
@@ -177,9 +183,22 @@ function App() {
             const data = response.data;
             setTextResult(data);
 
-            if (user && supabase) {
+            const newHistoryItem = {
+              id: Date.now(),
+              message: message,
+              is_fraud: data.is_fraud,
+              confidence: data.confidence_score,
+              timestamp: new Date().toISOString()
+            };
+            setSearchHistory(prev => {
+              const updated = [newHistoryItem, ...prev].slice(0, 50); // keep last 50
+              localStorage.setItem('searchHistory', JSON.stringify(updated));
+              return updated;
+            });
+
+            if (userData && supabase) {
               const insertPayload = {
-                user_id: user.id,
+                user_id: userData.email || userData.id || 'unknown',
                 original_sms_text: message,
                 ml_confidence_score: data.confidence_score,
                 is_fraud: data.is_fraud,
@@ -317,8 +336,8 @@ function App() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-10 md:px-6 md:pt-12">
-        <section className="grid items-start gap-8 md:grid-cols-2">
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <section className="grid items-start gap-8 lg:grid-cols-12">
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="lg:col-span-8">
             <p className="inline-flex items-center rounded-full border border-violet-200 bg-violet-100/70 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-violet-700">
               Hybrid AI Engine Active
             </p>
@@ -340,216 +359,266 @@ function App() {
                 ))}
               </div>
             </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.06 }}
-            className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.3)]"
-          >
-            <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Multimodal Analyzer</p>
-              <div className="flex flex-wrap items-center gap-2 text-[10px] md:text-xs font-medium text-slate-500">
-                <span className="rounded-md bg-slate-100 px-2 py-1">{message.length} chars</span>
-                <select 
-                  value={deviceId} 
-                  onChange={e => setDeviceId(e.target.value)}
-                  className="rounded-md bg-slate-100 outline-none border border-transparent focus:border-violet-300 py-1 px-1 max-w-[140px] md:max-w-none"
-                >
-                  <option value="DEV-ALPHA001">Canon EOS R5</option>
-                  <option value="DEV-BETA002">iPhone 15 Pro</option>
-                  <option value="DEV-UNKNOWN">Unknown Device</option>
-                </select>
-              </div>
-            </div>
-
-            <div 
-              className={`relative rounded-2xl border-2 border-dashed ${file ? 'border-violet-400 bg-violet-50/30' : 'border-slate-200 bg-slate-50'} transition-colors focus-within:border-violet-400`}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.06 }}
+              className="mt-8 rounded-3xl border border-slate-200 bg-white p-4 md:p-5 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.3)]"
             >
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Paste text here, or drop a file..."
-                className="min-h-[140px] md:min-h-[160px] w-full resize-y bg-transparent p-3 md:p-4 text-sm md:text-base leading-relaxed text-slate-700 outline-none"
-              />
-              
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/60 bg-white/50 p-2 md:p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 md:gap-2 rounded-lg bg-white border border-slate-200 px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Multimodal Analyzer</p>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] md:text-xs font-medium text-slate-500">
+                  <span className="rounded-md bg-slate-100 px-2 py-1">{message.length} chars</span>
+                  <select 
+                    value={deviceId} 
+                    onChange={e => setDeviceId(e.target.value)}
+                    className="rounded-md bg-slate-100 outline-none border border-transparent focus:border-violet-300 py-1 px-1 max-w-[140px] md:max-w-none"
                   >
-                     <FiUpload /> <span className="hidden xxs:inline">Attach Media</span><span className="xxs:hidden">Attach</span>
-                  </button>
-                  {file && (
-                    <div className="flex items-center gap-1.5 md:gap-2 rounded-lg bg-violet-100 px-2 py-1 md:px-3 md:py-1.5 text-[10px] md:text-sm font-semibold text-violet-700">
-                      <FiImage className="flex-shrink-0" />
-                      <span className="truncate max-w-[80px] md:max-w-[150px]">{file.name}</span>
-                      <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="hover:text-violet-900 ml-1">
-                        <FiX />
-                      </button>
-                    </div>
-                  )}
+                    <option value="DEV-ALPHA001">Canon EOS R5</option>
+                    <option value="DEV-BETA002">iPhone 15 Pro</option>
+                    <option value="DEV-UNKNOWN">Unknown Device</option>
+                  </select>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-4 flex flex-col gap-3">
-              {error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600">{error}</p> : null}
-              <button
-                onClick={handleAnalyze}
-                disabled={analyzing}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-base font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              <div 
+                className={`relative rounded-2xl border-2 border-dashed ${file ? 'border-violet-400 bg-violet-50/30' : 'border-slate-200 bg-slate-50'} transition-colors focus-within:border-violet-400`}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
               >
-                {analyzing ? (
-                  <>
-                    <FiLoader className="animate-spin" /> Scanning Message...
-                  </>
-                ) : (
-                  <>
-                    Analyze Threat <FiShield />
-                  </>
-                )}
-              </button>
-            </div>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Paste text here, or drop a file..."
+                  className="min-h-[140px] md:min-h-[160px] w-full resize-y bg-transparent p-3 md:p-4 text-sm md:text-base leading-relaxed text-slate-700 outline-none"
+                />
+                
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/60 bg-white/50 p-2 md:p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 md:gap-2 rounded-lg bg-white border border-slate-200 px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                       <FiUpload /> <span className="hidden xxs:inline">Attach Media</span><span className="xxs:hidden">Attach</span>
+                    </button>
+                    {file && (
+                      <div className="flex items-center gap-1.5 md:gap-2 rounded-lg bg-violet-100 px-2 py-1 md:px-3 md:py-1.5 text-[10px] md:text-sm font-semibold text-violet-700">
+                        <FiImage className="flex-shrink-0" />
+                        <span className="truncate max-w-[80px] md:max-w-[150px]">{file.name}</span>
+                        <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="hover:text-violet-900 ml-1">
+                          <FiX />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-            <AnimatePresence>
-              {textResult ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              <div className="mt-4 flex flex-col gap-3">
+                {error ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600">{error}</p> : null}
+                <button
+                  onClick={handleAnalyze}
+                  disabled={analyzing}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-base font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
-                      {textResult.is_fraud ? <FiAlertTriangle className="text-rose-500" /> : <FiCheckCircle className="text-emerald-500" />}
-                      {textResult.is_fraud ? 'Text Fraud Detected' : 'Text Looks Safe'}
-                    </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${textResult.is_fraud ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      {confidence}% Confidence
-                    </span>
-                  </div>
-
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div
-                      className={`h-full rounded-full ${textResult.is_fraud ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                      style={{ width: `${confidence}%` }}
-                    />
-                  </div>
-
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{textResult.explanation}</p>
-                </motion.div>
-              ) : null}
-
-              {mediaResult ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                >
-                  {/* Detailed Media Analysis Result Header */}
-                  <div className="flex flex-col gap-3 mb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
-                        {mediaResult.distribution.trust_score < 2 ? <FiAlertTriangle className="text-amber-500" /> : <FiCheckCircle className="text-emerald-500" />}
-                        Media Verdict
-                      </div>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
-                          mediaResult.distribution.trust_score < 2
-                            ? "bg-amber-100 text-amber-700 border border-amber-200"
-                            : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                        }`}
-                      >
-                        {mediaResult.distribution.badge}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
-                        AI Confidence
-                      </div>
-                      <span className="text-sm font-black text-slate-900">
-                        {(mediaResult.verification.ensemble_confidence * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {/* Layer 1: Capture Details */}
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-                      <p className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2.5">
-                        Layer 1: Capture
-                      </p>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-500">Device:</span>
-                          <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={`${mediaResult.capture.device_make} ${mediaResult.capture.device_model}`}>
-                            {mediaResult.capture.device_make} {mediaResult.capture.device_model}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-500">PKI:</span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              mediaResult.capture.pki_verified
-                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                : "bg-rose-50 text-rose-600 border border-rose-100"
-                            }`}
-                          >
-                            {mediaResult.capture.pki_verified ? "Verified" : "Unverified"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Layer 2: AI Verify Details */}
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-                      <p className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2.5">
-                        Layer 2: AI Verify
-                      </p>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-500">Spatial:</span>
-                          <span className="font-semibold text-slate-700">
-                            {(mediaResult.verification.models.xception_cnn * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-500">Noise:</span>
-                          <span className="font-semibold text-slate-700">
-                            {(mediaResult.verification.models.noise_pattern_cnn * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {mediaResult.verification.risk_factors.length > 0 && (
-                    <div className="mt-4 bg-rose-50/70 p-3.5 rounded-xl border border-rose-100">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-rose-800 mb-2">
-                        Risk Factors Identified
-                      </p>
-                      <ul className="text-xs text-rose-600 space-y-1.5 list-none">
-                        {mediaResult.verification.risk_factors.map((r, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="mt-1 h-1 w-1 rounded-full bg-rose-400 flex-shrink-0" />
-                            {r}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  {analyzing ? (
+                    <>
+                      <FiLoader className="animate-spin" /> Scanning Message...
+                    </>
+                  ) : (
+                    <>
+                      Analyze Threat <FiShield />
+                    </>
                   )}
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {textResult ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
+                        {textResult.is_fraud ? <FiAlertTriangle className="text-rose-500" /> : <FiCheckCircle className="text-emerald-500" />}
+                        {textResult.is_fraud ? 'Text Fraud Detected' : 'Text Looks Safe'}
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${textResult.is_fraud ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {confidence}% Confidence
+                      </span>
+                    </div>
+
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className={`h-full rounded-full ${textResult.is_fraud ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${confidence}%` }}
+                      />
+                    </div>
+
+                    <p className="mt-3 text-sm leading-relaxed text-slate-600">{textResult.explanation}</p>
+                  </motion.div>
+                ) : null}
+
+                {mediaResult ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    {/* Detailed Media Analysis Result Header */}
+                    <div className="flex flex-col gap-3 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
+                          {mediaResult.distribution.trust_score < 2 ? <FiAlertTriangle className="text-amber-500" /> : <FiCheckCircle className="text-emerald-500" />}
+                          Media Verdict
+                        </div>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
+                            mediaResult.distribution.trust_score < 2
+                              ? "bg-amber-100 text-amber-700 border border-amber-200"
+                              : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                          }`}
+                        >
+                          {mediaResult.distribution.badge}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-bold uppercase tracking-[0.15em] text-slate-500">
+                          AI Confidence
+                        </div>
+                        <span className="text-sm font-black text-slate-900">
+                          {(mediaResult.verification.ensemble_confidence * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {/* Layer 1: Capture Details */}
+                      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2.5">
+                          Layer 1: Capture
+                        </p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-slate-500">Device:</span>
+                            <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={`${mediaResult.capture.device_make} ${mediaResult.capture.device_model}`}>
+                              {mediaResult.capture.device_make} {mediaResult.capture.device_model}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-slate-500">PKI:</span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                mediaResult.capture.pki_verified
+                                  ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                  : "bg-rose-50 text-rose-600 border border-rose-100"
+                              }`}
+                            >
+                              {mediaResult.capture.pki_verified ? "Verified" : "Unverified"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Layer 2: AI Verify Details */}
+                      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-2.5">
+                          Layer 2: AI Verify
+                        </p>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Spatial:</span>
+                            <span className="font-semibold text-slate-700">
+                              {(mediaResult.verification.models.xception_cnn * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Noise:</span>
+                            <span className="font-semibold text-slate-700">
+                              {(mediaResult.verification.models.noise_pattern_cnn * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {mediaResult.verification.risk_factors.length > 0 && (
+                      <div className="mt-4 bg-rose-50/70 p-3.5 rounded-xl border border-rose-100">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-rose-800 mb-2">
+                          Risk Factors Identified
+                        </p>
+                        <ul className="text-xs text-rose-600 space-y-1.5 list-none">
+                          {mediaResult.verification.risk_factors.map((r, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="mt-1 h-1 w-1 rounded-full bg-rose-400 flex-shrink-0" />
+                              {r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </motion.div>
           </motion.div>
+
+          {/* Search History Column */}
+          <div className="lg:col-span-4 sticky top-24">
+            {searchHistory.length > 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm h-full max-h-[calc(100vh-140px)] flex flex-col">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FiClock className="text-lg text-slate-500" />
+                    <h3 className="text-lg font-bold tracking-tight text-slate-900">Recent Checks</h3>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase tracking-wider">{searchHistory.length} Total</span>
+                </div>
+                <div className="space-y-3 overflow-y-auto pr-2 flex-1 scrollbar-thin scrollbar-thumb-slate-200">
+                  {searchHistory.map((item) => (
+                    <div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col gap-2 transition hover:border-violet-200 hover:shadow-md">
+                      <div className="flex justify-between items-start gap-3">
+                        <p className="text-sm text-slate-700 font-medium leading-snug line-clamp-2" title={item.message}>{item.message}</p>
+                        <span className={`flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${item.is_fraud ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {item.is_fraud ? 'Fraud' : 'Safe'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center border-t border-slate-200 pt-2">
+                        <p className="text-[10px] text-slate-400 font-medium">{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[10px] text-slate-500 font-bold">Confidence: {item.confidence}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-center">
+                  <button 
+                    onClick={() => {
+                      setSearchHistory([]);
+                      localStorage.removeItem('searchHistory');
+                    }}
+                    className="text-xs font-bold text-rose-500 hover:text-rose-700 transition flex items-center gap-1.5"
+                  >
+                    <FiX className="text-sm" /> Clear History
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-slate-200 border-dashed bg-slate-50/50 p-6 shadow-sm h-full min-h-[400px] flex flex-col items-center justify-center text-center text-slate-400 transition hover:bg-slate-50">
+                <div className="mb-4 rounded-2xl bg-slate-100 p-4">
+                  <FiClock className="text-3xl opacity-50 text-slate-500" />
+                </div>
+                <p className="text-lg font-bold text-slate-700">No activity yet</p>
+                <p className="text-sm mt-1 max-w-[200px] leading-relaxed">Run an analysis to see your recent checks and decision audit trail here.</p>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="mt-14">
@@ -672,8 +741,72 @@ function App() {
             )}
           </div>
         </section>
-
       </main>
+
+      <footer className="mt-20 border-t border-slate-200 bg-white py-12 md:py-20 lg:py-24">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
+            <div className="lg:col-span-4">
+              <div className="flex items-center gap-3">
+                <span className="rounded-xl bg-violet-600 p-2 text-white">
+                  <FiShield className="text-2xl" />
+                </span>
+                <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">FraudGuard AI</h2>
+              </div>
+              <p className="mt-6 max-w-sm text-base leading-relaxed text-slate-500">
+                Leading the global standard in hybrid threat detection. We provide businesses with the clarity and speed needed to protect every customer interaction.
+              </p>
+              <div className="mt-8 flex gap-4">
+                {['twitter', 'linkedin', 'github'].map(social => (
+                  <button key={social} className="h-10 w-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-violet-600 hover:text-white hover:border-violet-600 transition shadow-sm capitalize">
+                    {social.charAt(0)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-8">
+              <div className="flex flex-col gap-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-900">Platform</h3>
+                <ul className="flex flex-col gap-3">
+                  {['Text Analysis', 'Media Verification', 'Blockchain Ledger', 'Developer API', 'Integrations'].map(item => (
+                    <li key={item}><a href="#" className="text-sm font-medium text-slate-600 hover:text-violet-600 transition">{item}</a></li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-col gap-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-900">Company</h3>
+                <ul className="flex flex-col gap-3">
+                  {['About Us', 'Our Mission', 'Team', 'Careers', 'Brand Assets'].map(item => (
+                    <li key={item}><a href="#" className="text-sm font-medium text-slate-600 hover:text-violet-600 transition">{item}</a></li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-col gap-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-900">Resources</h3>
+                <ul className="flex flex-col gap-3">
+                  {['Documentation', 'Security Blog', 'Trust Center', 'Status Page', 'Support'].map(item => (
+                    <li key={item}><a href="#" className="text-sm font-medium text-slate-600 hover:text-violet-600 transition">{item}</a></li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-16 border-t border-slate-100 pt-8 lg:mt-24">
+            <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+              <p className="text-sm font-medium text-slate-500">
+                © {new Date().getFullYear()} FraudGuard AI, Inc. All rights reserved. Built with precision for digital safety.
+              </p>
+              <div className="flex gap-6">
+                {['Privacy Policy', 'Terms of Service', 'Cookie Settings'].map(item => (
+                  <a key={item} href="#" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition">{item}</a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Auth Modal Overlay */}
       <AnimatePresence>

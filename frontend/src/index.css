@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-xs: 400px;
+  --breakpoint-xxs: 320px;
+}
+
 :root {
   color-scheme: light;
 }
