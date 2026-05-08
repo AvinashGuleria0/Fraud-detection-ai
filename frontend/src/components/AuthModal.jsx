@@ -32,15 +32,22 @@ export default function AuthModal({ mode: initialMode, onClose, onSuccess }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 200,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(5,8,16,0.85)', backdropFilter: 'blur(8px)',
-      padding: 16,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      zIndex: 9999,
+      display: 'grid',
+      placeItems: 'center',
+      background: 'rgba(5,8,16,0.9)',
+      backdropFilter: 'blur(12px)',
+      padding: '20px',
     }}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
         style={{
           width: '100%', maxWidth: 440,
           background: 'var(--panel)',
