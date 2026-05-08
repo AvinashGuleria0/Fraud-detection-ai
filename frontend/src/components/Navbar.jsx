@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiShield, FiMenu, FiX, FiLogIn, FiUserPlus, FiLogOut, FiSun, FiMoon } from 'react-icons/fi';
+import { FiShield, FiMenu, FiX, FiLogIn, FiUserPlus, FiLogOut, FiSun, FiMoon, FiUser } from 'react-icons/fi';
+import ProfileModal from './ProfileModal';
 
 const navLinks = [
   { label: 'Home',     path: '/' },
@@ -14,6 +15,8 @@ const navLinks = [
 export default function Navbar({ userData, onLogin, onSignup, onLogout, theme, toggleTheme }) {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   return (
     <header style={{
@@ -39,7 +42,7 @@ export default function Navbar({ userData, onLogin, onSignup, onLogout, theme, t
           <div>
             <div style={{
               fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
-              color: '#fff', letterSpacing: '0.02em',
+              color: 'var(--text)', letterSpacing: '0.02em',
             }}>
               Fraud<span style={{ color: 'var(--cyan)' }}>Guard</span>
               <span style={{ color: 'var(--violet)', marginLeft: 4 }}>AI</span>
@@ -106,28 +109,55 @@ export default function Navbar({ userData, onLogin, onSignup, onLogout, theme, t
           </button>
 
           {userData ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'var(--panel2)', border: '1px solid var(--border2)',
-                borderRadius: 8, padding: '6px 12px',
-              }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700, color: 'var(--violet)',
-                }}>
-                  {(userData.name || userData.email || 'U').charAt(0).toUpperCase()}
-                </div>
-                <span style={{ fontSize: 12, color: 'var(--text2)', fontFamily: 'var(--font-data)' }}>
-                  {userData.name || userData.email}
-                </span>
-              </div>
-              <button className="btn-cyber btn-cyan" onClick={onLogout}
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <FiLogOut /> Logout
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+              <button 
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}
+              >
+                <img 
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`} 
+                  style={{ width: 34, height: 34, borderRadius: '50%', border: '2px solid var(--violet)', background: 'var(--panel2)' }}
+                  alt="Profile"
+                />
               </button>
+
+              <AnimatePresence>
+                {profileDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    style={{
+                      position: 'absolute', top: 46, right: 0, width: 160,
+                      background: 'var(--panel)', border: '1px solid var(--border2)',
+                      borderRadius: 8, padding: 8, boxShadow: 'var(--card-shadow)',
+                      display: 'flex', flexDirection: 'column', gap: 4, zIndex: 200,
+                    }}
+                  >
+                    <button className="btn-cyber" onClick={() => { setEditProfileOpen(true); setProfileDropdownOpen(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', color: 'var(--text)', textAlign: 'left', border: 'none' }}>
+                      <FiUser /> Edit Profile
+                    </button>
+                    <button className="btn-cyber" onClick={() => { onLogout(); setProfileDropdownOpen(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', color: 'var(--red)', textAlign: 'left', border: 'none' }}>
+                      <FiLogOut /> Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {editProfileOpen && (
+                  <ProfileModal 
+                    userData={userData} 
+                    onClose={() => setEditProfileOpen(false)} 
+                    onSuccess={() => setEditProfileOpen(false)} 
+                  />
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <>

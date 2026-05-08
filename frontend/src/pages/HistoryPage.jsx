@@ -23,7 +23,7 @@ export default function HistoryPage() {
         </p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: '#fff', marginBottom: 8 }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: 'var(--text)', marginBottom: 8 }}>
               Analysis History
             </h1>
             <p style={{ fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--font-data)' }}>

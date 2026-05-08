@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { supabase } from './supabaseClient';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -19,8 +22,15 @@ export default function App() {
   const [theme, setTheme] = useState(localStorage.getItem('fg_theme') || 'dark');
 
   useEffect(() => {
-    const stored = localStorage.getItem('fg_user');
-    if (stored) setUserData(JSON.parse(stored));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserData(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserData(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -30,8 +40,8 @@ export default function App() {
 
   const openLogin  = () => { setAuthMode('login');  setShowAuth(true); };
   const openSignup = () => { setAuthMode('signup'); setShowAuth(true); };
-  const handleLogout = () => {
-    localStorage.removeItem('fg_user');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUserData(null);
   };
 
@@ -48,7 +58,7 @@ export default function App() {
 
       <Routes>
         <Route path="/"         element={<HomePage  onSignup={openSignup} />} />
-        <Route path="/analysis" element={<AnalysisPage />} />
+        <Route path="/analysis" element={<AnalysisPage userData={userData} onLoginRequired={openLogin} />} />
         <Route path="/verify"   element={<VerifyPage />} />
         <Route path="/history"  element={<HistoryPage />} />
         <Route path="/about"    element={<AboutPage />} />
@@ -68,6 +78,7 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+      <ToastContainer theme={theme} position="bottom-right" />
     </div>
   );
 }

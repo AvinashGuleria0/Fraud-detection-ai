@@ -20,7 +20,7 @@ export default function Footer() {
               }}>
                 <FiShield style={{ color: 'var(--violet)', fontSize: 15 }} />
               </div>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
                 Fraud<span style={{ color: 'var(--cyan)' }}>Guard</span><span style={{ color: 'var(--violet)', marginLeft: 3 }}>AI</span>
               </span>
             </div>

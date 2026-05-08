@@ -37,7 +37,7 @@ export default function AboutPage() {
         <p style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-data)', marginBottom: 12 }}>
           Our Mission
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34, color: '#fff', lineHeight: 1.1, marginBottom: 18 }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34, color: 'var(--text)', lineHeight: 1.1, marginBottom: 18 }}>
           Building the Universal Notary<br />
           <span style={{ color: 'var(--cyan)' }}>for Reality</span>
         </h1>
@@ -82,7 +82,7 @@ export default function AboutPage() {
                 }}>
                   <Icon />
                 </div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 5 }}>{t.name}</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 5 }}>{t.name}</h3>
                 <p style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-data)', letterSpacing: '0.06em' }}>{t.role}</p>
               </motion.div>
             );
@@ -113,7 +113,7 @@ export default function AboutPage() {
                   {p.status}
                 </span>
               </div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, color: '#fff', marginBottom: 12 }}>{p.title}</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, color: 'var(--text)', marginBottom: 12 }}>{p.title}</h3>
               {p.items.map(item => (
                 <p key={item} style={{
                   fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--font-data)',
@@ -141,7 +141,7 @@ export default function AboutPage() {
             return (
               <div key={p.title} className="panel" style={{ padding: '22px 24px' }}>
                 <Icon style={{ color: p.color, fontSize: 20, marginBottom: 12 }} />
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 8 }}>{p.title}</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 8 }}>{p.title}</h3>
                 <p style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.7, fontFamily: 'var(--font-data)' }}>{p.desc}</p>
               </div>
             );

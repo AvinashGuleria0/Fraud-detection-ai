@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiShield, FiMail, FiLock, FiUser } from 'react-icons/fi';
+import { supabase } from '../supabaseClient';
 
 export default function AuthModal({ mode: initialMode, onClose, onSuccess }) {
   const [mode, setMode] = useState(initialMode || 'login');
@@ -9,26 +10,23 @@ export default function AuthModal({ mode: initialMode, onClose, onSuccess }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (mode === 'login') {
-      const users = JSON.parse(localStorage.getItem('fg_users') || '[]');
-      const user = users.find(u => u.email === email && u.password === password);
-      if (!user) { setError('Invalid email or password.'); return; }
-      const obj = { email: user.email, name: user.name };
-      localStorage.setItem('fg_user', JSON.stringify(obj));
-      onSuccess(obj);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { setError(error.message); return; }
+      onSuccess(data.user);
     } else {
       if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-      const users = JSON.parse(localStorage.getItem('fg_users') || '[]');
-      if (users.some(u => u.email === email)) { setError('Email already registered.'); return; }
-      users.push({ email, password, name });
-      localStorage.setItem('fg_users', JSON.stringify(users));
-      const obj = { email, name };
-      localStorage.setItem('fg_user', JSON.stringify(obj));
-      onSuccess(obj);
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: { data: { name } }
+      });
+      if (error) { setError(error.message); return; }
+      onSuccess(data.user);
     }
   };
 
@@ -78,7 +76,7 @@ export default function AuthModal({ mode: initialMode, onClose, onSuccess }) {
             }}>
               <FiShield style={{ color: 'var(--violet)', fontSize: 22 }} />
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#fff', marginBottom: 6 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: 6 }}>
               {mode === 'login' ? 'Welcome back' : 'Create account'}
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text2)', fontFamily: 'var(--font-data)' }}>

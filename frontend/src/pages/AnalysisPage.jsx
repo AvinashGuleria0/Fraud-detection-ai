@@ -1,19 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiShield, FiAlertTriangle, FiCheckCircle, FiLoader,
   FiUpload, FiImage, FiX, FiCpu, FiDatabase, FiEye,
 } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const DEVICES = [
-  { value: 'DEV-ALPHA001', label: 'Canon EOS R5' },
-  { value: 'DEV-BETA002',  label: 'iPhone 15 Pro' },
-  { value: 'DEV-GAMMA003', label: 'Sony A7 IV' },
-  { value: 'DEV-DELTA004', label: 'Samsung S24 Ultra' },
-  { value: 'DEV-UNKNOWN',  label: 'Unknown Device' },
+  { value: 'IOS', label: 'IOS' },
+  { value: 'Android',  label: 'Android' },
+  { value: 'DSLR', label: 'DSLR' },
+  { value: 'Unknown',  label: 'Unknown' },
 ];
 
 function VerdictBadge({ verdict, score }) {
@@ -50,15 +50,29 @@ function ProgressBar({ value, color }) {
   );
 }
 
-export default function AnalysisPage() {
+export default function AnalysisPage({ userData, onLoginRequired }) {
   const [message, setMessage] = useState('');
   const [file, setFile] = useState(null);
-  const [deviceId, setDeviceId] = useState('DEV-ALPHA001');
+  const [deviceId, setDeviceId] = useState('IOS');
   const [analyzing, setAnalyzing] = useState(false);
   const [textResult, setTextResult] = useState(null);
   const [mediaResult, setMediaResult] = useState(null);
   const [error, setError] = useState('');
+  const [credits, setCredits] = useState(0);
   const fileRef = useRef();
+
+  useEffect(() => {
+    const todayDate = new Date().toISOString().split('T')[0];
+    const usageKey = userData ? `fg_usage_${userData.email}` : 'fg_usage_anon';
+    const usageData = JSON.parse(localStorage.getItem(usageKey) || '{"date":"","count":0}');
+    const maxLimit = userData ? 20 : 5;
+    
+    if (usageData.date !== todayDate) {
+      setCredits(maxLimit);
+    } else {
+      setCredits(Math.max(0, maxLimit - usageData.count));
+    }
+  }, [userData]);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -69,6 +83,25 @@ export default function AnalysisPage() {
   const handleAnalyze = async () => {
     if (!message.trim() && !file) {
       setError('Paste a message or attach a file to analyze.');
+      return;
+    }
+
+    const todayDate = new Date().toISOString().split('T')[0];
+    const usageKey = userData ? `fg_usage_${userData.email}` : 'fg_usage_anon';
+    let usageData = JSON.parse(localStorage.getItem(usageKey) || '{"date":"","count":0}');
+    
+    if (usageData.date !== todayDate) {
+      usageData = { date: todayDate, count: 0 };
+    }
+
+    const maxLimit = userData ? 20 : 5;
+    if (usageData.count >= maxLimit) {
+      if (!userData) {
+        toast.info('Guest limit reached. Please log in for 20 daily credits.');
+        onLoginRequired();
+      } else {
+        toast.error('Daily limit reached. Try again tomorrow.');
+      }
       return;
     }
     setError(''); setAnalyzing(true);
@@ -118,6 +151,10 @@ export default function AnalysisPage() {
       }
 
       await Promise.all(tasks);
+      usageData.count += 1;
+      localStorage.setItem(usageKey, JSON.stringify(usageData));
+      setCredits(maxLimit - usageData.count);
+      toast.success(`Analysis complete. ${maxLimit - usageData.count} searches left today.`);
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Analysis failed. Ensure backend is running.');
     } finally {
@@ -134,9 +171,25 @@ export default function AnalysisPage() {
         <p style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-data)', marginBottom: 10 }}>
           Multimodal Analysis Engine
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: '#fff', marginBottom: 8 }}>
-          Threat Analysis
-        </h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: 'var(--text)', margin: 0 }}>
+            Threat Analysis
+          </h1>
+          <div style={{ 
+            background: 'var(--panel2)', border: '1px solid var(--border)', 
+            borderRadius: 8, padding: '4px 12px', display: 'flex', alignItems: 'center', gap: 8
+          }}>
+            <span style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--font-data)', letterSpacing: '0.05em' }}>
+              REMAINING CREDITS
+            </span>
+            <span style={{ 
+              fontSize: 16, fontWeight: 800, color: credits > 0 ? 'var(--cyan)' : 'var(--red)',
+              fontFamily: 'var(--font-data)'
+            }}>
+              {credits}
+            </span>
+          </div>
+        </div>
         <p style={{ fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--font-data)' }}>
           Analyze text messages, emails, images, videos, and audio files for fraud, manipulation, and synthetic content.
         </p>
@@ -250,7 +303,7 @@ export default function AnalysisPage() {
               background: analyzing ? 'rgba(139,92,246,0.3)' : 'var(--violet)',
               border: `1px solid ${analyzing ? 'rgba(139,92,246,0.3)' : 'var(--violet)'}`,
               borderRadius: 8, padding: '14px',
-              color: '#fff', fontFamily: 'var(--font-mono)',
+              color: 'var(--text)', fontFamily: 'var(--font-mono)',
               fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase',
               fontWeight: 700, cursor: analyzing ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

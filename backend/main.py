@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import os, pickle, math, collections, sys, re, time, uuid
-from backend.services.groq_llm import analyze_message_with_llama
-from backend.services.ai_truth import ai_engine, blockchain, records_db, TRUSTED_DEVICES, compute_sha256
+from services.groq_llm import analyze_message_with_llama
+from services.ai_truth import ai_engine, blockchain, records_db, TRUSTED_DEVICES, compute_sha256
 from datetime import datetime, timezone
 
 # ── Stop Words ──

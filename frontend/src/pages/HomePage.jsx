@@ -81,7 +81,7 @@ export default function HomePage({ onSignup }) {
           <h1 style={{
             fontFamily: 'var(--font-display)', fontWeight: 800,
             fontSize: 'clamp(34px, 6vw, 60px)', lineHeight: 1.05,
-            letterSpacing: '-0.02em', color: '#fff', marginBottom: 18,
+            letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 18,
           }}>
             The Universal Notary{' '}
             <span style={{ color: 'var(--cyan)' }}>for Reality</span>
@@ -139,7 +139,7 @@ export default function HomePage({ onSignup }) {
           <p style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-data)', marginBottom: 10 }}>
             Architecture
           </p>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: '#fff' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--text)' }}>
             4-Layer Trust Architecture
           </h2>
         </div>
@@ -176,7 +176,7 @@ export default function HomePage({ onSignup }) {
                     fontWeight: 800, color: `${layer.color}60`,
                   }}>{layer.id}</span>
                 </div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--text)', marginBottom: 4 }}>
                   {layer.title}
                 </h3>
                 <p style={{ fontSize: 10, color: layer.color, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-data)', marginBottom: 10 }}>
@@ -205,7 +205,7 @@ export default function HomePage({ onSignup }) {
             <p style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-data)', marginBottom: 12 }}>
               Capabilities
             </p>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: '#fff', marginBottom: 16, lineHeight: 1.2 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--text)', marginBottom: 16, lineHeight: 1.2 }}>
               Everything you need to<br />
               <span style={{ color: 'var(--violet)' }}>fight digital fraud</span>
             </h2>
@@ -237,7 +237,7 @@ export default function HomePage({ onSignup }) {
           border: '1px solid rgba(139,92,246,0.25)',
           borderRadius: 16, padding: '50px 32px',
         }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: '#fff', marginBottom: 14 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: 'var(--text)', marginBottom: 14 }}>
             Ready to secure your <span style={{ color: 'var(--cyan)' }}>digital reality</span>?
           </h2>
           <p style={{ fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--font-data)', marginBottom: 28 }}>

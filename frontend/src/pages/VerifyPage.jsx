@@ -56,7 +56,7 @@ export default function VerifyPage() {
         </p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: '#fff', marginBottom: 8 }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: 'var(--text)', marginBottom: 8 }}>
               Verification Ledger
             </h1>
             <p style={{ fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--font-data)' }}>
@@ -192,7 +192,7 @@ export default function VerifyPage() {
                 <span style={{ color: 'var(--cyan)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   title={block.data?.content_hash}>{block.data?.content_hash || '—'}</span>
                 <span style={{ color: 'var(--text3)' }}>Verdict</span>
-                <span style={{ color: '#fff', fontWeight: 700 }}>{block.data?.verdict || '—'}</span>
+                <span style={{ color: 'var(--text)', fontWeight: 700 }}>{block.data?.verdict || '—'}</span>
                 <span style={{ color: 'var(--text3)' }}>AI Confidence</span>
                 <span style={{ color: 'var(--green)' }}>
                   {block.data?.ai_confidence ? (block.data.ai_confidence * 100).toFixed(1) + '%' : '—'}
